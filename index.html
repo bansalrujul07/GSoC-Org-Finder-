@@ -1877,6 +1877,9 @@ kbd:hover{
         <button class="gh-fetch" id="mFetchBtn">Fetch Live Stats</button>
       </div>
 
+      <div class="section-title">Where to Contribute</div>
+      <div id="mStartPoint" class="mb-8"></div>
+
       <div class="section-title">Description</div>
       <p id="mDesc" class="text-sm text-zinc-600 leading-relaxed mb-6"></p>
 
@@ -2518,6 +2521,92 @@ kbd:hover{
     }).join('');
 
     return `<div class="flex flex-wrap gap-2">${chips}</div>`;
+  }
+
+  function getOrgCategoryLabel(cat) {
+    const value = String(cat || '').trim().toLowerCase();
+    if (!value) return 'General open source';
+
+    const labels = {
+      os: 'Operating systems',
+      infra: 'Infrastructure',
+      web: 'Web and frontend',
+      data: 'Data and databases',
+      dev: 'Developer tools',
+      security: 'Security',
+      science: 'Science and research',
+      media: 'Media and creative tools',
+      programming: 'Programming languages',
+      other: 'Open source projects'
+    };
+
+    if (labels[value]) return labels[value];
+    return value.replace(/[-_]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  function getCompetitionSnapshot(competition) {
+    const value = String(competition || '').trim().toLowerCase();
+    const snapshots = {
+      chill: { label: 'Low competition', summary: 'A quieter entry point for shortlist comparisons.' },
+      moderate: { label: 'Balanced competition', summary: 'A good middle ground between access and demand.' },
+      hot: { label: 'High competition', summary: 'Expect stronger applicant demand and tighter selection.' }
+    };
+
+    if (snapshots[value]) return snapshots[value];
+    if (!value) return { label: 'Not listed', summary: 'Competition level has not been listed yet.' };
+    return { label: value.toUpperCase(), summary: 'Competition level is not mapped yet.' };
+  }
+
+  function getCodebaseSnapshot(codebase) {
+    const value = String(codebase || '').trim().toLowerCase();
+    const snapshots = {
+      beginner: { label: 'Beginner-friendly', summary: 'Smaller ramp-up and clearer entry points.', levelClass: 'beginner' },
+      intermediate: { label: 'Intermediate', summary: 'Expect some repo familiarity before contributing.', levelClass: 'intermediate' },
+      advanced: { label: 'Advanced', summary: 'Large codebase with deeper context to absorb first.', levelClass: 'advanced' }
+    };
+
+    if (snapshots[value]) return snapshots[value];
+    return { label: value ? value.toUpperCase() : 'Not listed', summary: 'Use the repo and ideas page to confirm the ramp-up.', levelClass: 'beginner' };
+  }
+
+  function getStartingPointGuide(ideasUrl, repoUrl, techTags) {
+    if (ideasUrl && repoUrl) {
+      return {
+        title: 'Start with the ideas page, then verify the repo',
+        summary: 'The ideas page helps you shortlist the right project. The repository then confirms the stack, structure, and current work.',
+        step: 'Read the ideas page first, then inspect the repository.'
+      };
+    }
+
+    if (ideasUrl) {
+      return {
+        title: 'Start with the ideas page',
+        summary: 'Use the ideas page to understand what the org wants this season, then cross-check the technologies below.',
+        step: 'Read the ideas page first.'
+      };
+    }
+
+    if (repoUrl) {
+      return {
+        title: 'Start in the repository',
+        summary: 'The repository is the clearest source of truth here. Check the stack, code layout, and any starter issues before deciding.',
+        step: 'Inspect the repository first.'
+      };
+    }
+
+    if (techTags.length > 0) {
+      return {
+        title: 'Start with the technology stack',
+        summary: 'No direct entry links are listed, so the tech tags below are the fastest way to judge whether this org matches your skills.',
+        step: 'Review the tech tags and mentor section.'
+      };
+    }
+
+    return {
+      title: 'Start with the mentor section',
+      summary: 'This org does not expose a clear entry path yet. Use the mentor contact area below to look for the first contribution route.',
+      step: 'Check the mentor section below.'
+    };
   }
 
   function renderMentorContactSection(org) {
@@ -3808,12 +3897,27 @@ btn.__orgListenerAttached = true;
     }
     const isBookmarked = bookmarkedSet.has(org.name);
 
+    const categoryRaw = String(org.cat || org.category || 'general');
+    const categoryLabel = getOrgCategoryLabel(categoryRaw);
+    const competitionSnapshot = getCompetitionSnapshot(org.competition);
+    const codebaseSnapshot = getCodebaseSnapshot(org.codebase);
+    const techTags = Array.isArray(org.tags) ? org.tags.filter(Boolean) : [];
+    const fitTags = Array.isArray(org.fit) ? org.fit.filter(Boolean) : [];
+    const yearsValue = Number(org.years);
+    const firstYearValue = Number(org.firstYear);
+    const yearsText = Number.isFinite(yearsValue) ? String(yearsValue) : '—';
+    const firstYearText = Number.isFinite(firstYearValue) ? String(firstYearValue) : '—';
+    const description = org.desc || org.description || 'No description is available for this organization yet.';
+    const ideasUrl = sanitizeHrefUrl(org.ideas || org.ideasPage || org.ideasUrl);
+    const repoUrl = sanitizeHrefUrl(githubUrlFromValue(org.github || org.githubUrl || org.repository));
+    const startingPoint = getStartingPointGuide(ideasUrl, repoUrl, techTags);
+
     document.getElementById('mHeader').innerHTML = `
-      <span class="category-tag">${escapeHtml(String(org.cat).toUpperCase())}</span>
+      <span class="category-tag">${escapeHtml(categoryRaw.toUpperCase())}</span>
       <div class="flex items-start justify-between pr-10">
         <div>
           <h2>${escapeHtml(org.name)}</h2>
-          <p class="text-zinc-500">GSoC Partner for ${escapeHtml(String(org.years))} Years</p>
+          <p class="text-zinc-500">Focus area: ${escapeHtml(categoryLabel)} · ${escapeHtml(yearsText)} years in GSoC</p>
         </div>
         <button
           id="modalBookmarkBtn"
@@ -3844,27 +3948,65 @@ btn.__orgListenerAttached = true;
     }
 
     document.getElementById('mMetrics').innerHTML = `
-      <div class="metric-card"><p class="metric-value">${escapeHtml(String(org.years))}</p><p class="metric-label">Years In</p></div>
-      <div class="metric-card"><p class="metric-value">${escapeHtml(String(org.firstYear))}</p><p class="metric-label">First Year</p></div>
-      <div class="metric-card"><p class="metric-value font-mono text-sm">${escapeHtml(String(org.competition).toUpperCase())}</p><p class="metric-label">Competition</p></div>
-      <div class="metric-card"><p class="metric-value font-mono text-sm">${escapeHtml(String(org.codebase).toUpperCase())}</p><p class="metric-label">Codebase</p></div>
+      <div class="metric-card"><p class="metric-value">${escapeHtml(yearsText)}</p><p class="metric-label">Years In</p></div>
+      <div class="metric-card"><p class="metric-value">${escapeHtml(firstYearText)}</p><p class="metric-label">First Year</p></div>
+      <div class="metric-card"><p class="metric-value">${escapeHtml(competitionSnapshot.label)}</p><p class="metric-label">Competition</p><p class="text-[11px] text-zinc-500 mt-1 leading-snug">${escapeHtml(competitionSnapshot.summary)}</p></div>
+      <div class="metric-card"><p class="metric-value"><span class="complexity-badge ${escapeHtml(codebaseSnapshot.levelClass)}">${escapeHtml(codebaseSnapshot.label)}</span></p><p class="metric-label">Codebase</p><p class="text-[11px] text-zinc-500 mt-1 leading-snug">${escapeHtml(codebaseSnapshot.summary)}</p></div>
     `;
 
-    document.getElementById('mDesc').textContent = org.desc;
-    document.getElementById('mTech').innerHTML = org.tags.map(t => `<span class="tech-tag">${escapeHtml(t)}</span>`).join('');
-    document.getElementById('mFit').innerHTML = org.fit.map(f => `<span class="fit-tag">${escapeHtml(f)}</span>`).join('');
+    document.getElementById('mStartPoint').innerHTML = `
+      <div class="rounded-3xl border border-zinc-100 bg-gradient-to-br from-orange-50 via-white to-amber-50 p-5 shadow-sm dark:border-zinc-800 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-950">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div class="space-y-2">
+            <p class="text-[10px] font-bold uppercase tracking-[0.25em] text-primary">Where to contribute</p>
+            <h3 class="font-headline text-xl font-bold text-on-surface">${escapeHtml(startingPoint.title)}</h3>
+            <p class="text-sm leading-relaxed text-on-surface-variant">${escapeHtml(startingPoint.summary)}</p>
+            <div class="flex flex-wrap gap-2 pt-1">
+              ${ideasUrl ? `<a href="${escapeHtml(ideasUrl)}" target="_blank" rel="noopener noreferrer" class="mentor-link-chip"><span>💡</span><span>Ideas page</span></a>` : `<span class="mentor-link-chip opacity-60"><span>💡</span><span>No ideas page listed</span></span>`}
+              ${repoUrl ? `<a href="${escapeHtml(repoUrl)}" target="_blank" rel="noopener noreferrer" class="mentor-link-chip"><span>🐙</span><span>Repository</span></a>` : `<span class="mentor-link-chip opacity-60"><span>🐙</span><span>No repo link listed</span></span>`}
+            </div>
+          </div>
+          <div class="flex flex-col gap-2">
+            <span class="complexity-badge ${escapeHtml(codebaseSnapshot.levelClass)}">${escapeHtml(codebaseSnapshot.label)}</span>
+            <span class="text-xs uppercase tracking-[0.18em] text-zinc-500">${escapeHtml(categoryLabel)}</span>
+          </div>
+        </div>
+        <div class="mt-4 grid gap-3 sm:grid-cols-3">
+          <div class="rounded-2xl border border-white/70 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/80">
+            <p class="text-[10px] uppercase tracking-[0.2em] text-zinc-400">Domain</p>
+            <p class="mt-1 text-sm font-semibold text-on-surface">${escapeHtml(categoryLabel)}</p>
+          </div>
+          <div class="rounded-2xl border border-white/70 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/80">
+            <p class="text-[10px] uppercase tracking-[0.2em] text-zinc-400">Best first step</p>
+            <p class="mt-1 text-sm font-semibold text-on-surface">${escapeHtml(startingPoint.step)}</p>
+          </div>
+          <div class="rounded-2xl border border-white/70 bg-white/90 p-3 dark:border-zinc-800 dark:bg-zinc-950/80">
+            <p class="text-[10px] uppercase tracking-[0.2em] text-zinc-400">Tech to inspect</p>
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              ${techTags.length ? techTags.slice(0, 4).map(t => `<span class="tech-tag">${escapeHtml(t)}</span>`).join('') : '<span class="tech-tag">No technologies listed</span>'}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('mDesc').textContent = description;
+    document.getElementById('mTech').innerHTML = techTags.length ? techTags.map(t => `<span class="tech-tag">${escapeHtml(t)}</span>`).join('') : '<span class="tech-tag">No technologies listed</span>';
+    document.getElementById('mFit').innerHTML = fitTags.length ? fitTags.map(f => `<span class="fit-tag">${escapeHtml(f)}</span>`).join('') : '<span class="fit-tag">Fit guidance unavailable</span>';
 
     // Timeline
     let timelineHtml = '';
-    for(let y=2020; y<=2026; y++) {
-       const active = (y >= org.firstYear);
-       timelineHtml += `<span class="${y===2026?'current-year':''} ${active?'opacity-100':'opacity-30'}">${y}</span>`;
+    if (Number.isFinite(firstYearValue)) {
+      for (let y = 2020; y <= 2026; y++) {
+        const active = y >= firstYearValue;
+        timelineHtml += `<span class="${y === 2026 ? 'current-year' : ''} ${active ? 'opacity-100' : 'opacity-30'}">${y}</span>`;
+      }
+    } else {
+      timelineHtml = '<span class="text-zinc-500">Timeline unavailable</span>';
     }
     document.getElementById('mTimeline').innerHTML = timelineHtml;
 
     // Sanitize and set idea/repo links
-    const ideasUrl = sanitizeHrefUrl(org.ideas);
-    const repoUrl = sanitizeHrefUrl(githubUrlFromValue(org.github));
     const ideasBtn = document.getElementById('mIdeasBtn');
     const repoBtn = document.getElementById('mRepoBtn');
     if (ideasBtn) {
