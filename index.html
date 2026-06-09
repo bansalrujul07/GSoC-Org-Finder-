@@ -1926,6 +1926,8 @@
           <!-- Injected: Years, Competition, First Year, etc. -->
         </div>
 
+        <div class="section-title">Where to Contribute</div>
+        <div id="mStartPoint" class="mb-8"></div>
         <div class="github-stats-container mb-8">
           <button class="gh-fetch" id="mFetchBtn">Fetch Live Stats</button>
           <div class="gh-stat-item"><span class="material-symbols-outlined text-sm">star</span> <span
@@ -1937,9 +1939,6 @@
           <div class="gh-stat-item text-blue-400"><span class="material-symbols-outlined text-sm">history</span> <span
               id="mActivity">Moderate</span></div>
         </div>
-
-        <div class="section-title">Where to Contribute</div>
-        <div id="mStartPoint" class="mb-8"></div>
 
         <div class="section-title">Description</div>
         <p id="mDesc" class="text-sm text-zinc-600 leading-relaxed mb-6"></p>
@@ -3482,7 +3481,6 @@
         typeof orgIdentifier === 'number'
           ? ORGS[orgIdentifier]
           : ORGS.find(o => o.name === orgIdentifier);
-
       if (!org) return;
 
       const categoryRaw = String(org.cat || org.category || 'general');
